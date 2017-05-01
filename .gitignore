@@ -1,5 +1,4 @@
 .Rhistory
 *Rproj*
-week*
-*.R
-project/*.csv
+*.csv
+*_cache/

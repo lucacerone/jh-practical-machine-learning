@@ -1,0 +1,8 @@
+This is the repository for the final project of John Hopkins' "Practical Machine Learning"
+class on Coursera.
+
+The report for the assignment can be read at:
+
+https://lucacerone.github.io/jh-practical-machine-learning/project.html
+
+The source code used to generate the report is in the file `project.Rmd`.

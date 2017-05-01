@@ -1,8 +1,11 @@
 ---
 title: "R Notebook"
 output: 
-  html_notebook:
+  html_document:
     code_folding: hide
+    toc: true
+    toc_depth: 2
+    self_contained: true
 ---
 
 ```{r setup}
@@ -21,6 +24,8 @@ if (!file.exists('pml-testing.csv')) {
   download.file('https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv', 'pml-testing.csv', method = 'curl')
 }
 ```
+
+Source code at https://github.com/lucacerone/jh-practical-machine-learning/
 
 ```{r}
 
