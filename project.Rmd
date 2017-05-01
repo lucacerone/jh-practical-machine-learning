@@ -30,8 +30,7 @@ dataset <- read.csv('pml-training.csv', row.name = 1)
 
 # The problem:
 
-In this project we trained a model to predict what exercise has been performed using accelerometers' data from wearable devices.
-devices.
+In this project we trained a model to predict what exercise has been performed using accelerometers data from wearable devices.
 
 The dataset is desctibed at
 
