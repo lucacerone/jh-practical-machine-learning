@@ -5,12 +5,19 @@ output:
     code_folding: hide
     toc: true
     toc_depth: 2
+    toc_float: true
     self_contained: true
 ---
 
-```{r setup}
+```{r setup, collapse = FALSE}
 # Packages and options ----
-library(knitr)
+suppressMessages({
+  library(caret)
+  library(randomForest)
+  library(dplyr)
+  library(ggplot2)
+  library(knitr)
+})
 knitr::opts_chunk$set(
   echo = TRUE, warning = FALSE, error = FALSE, cache = TRUE, tidy = TRUE
 )
@@ -19,14 +26,151 @@ knitr::opts_chunk$set(
 if (!file.exists('pml-training.csv')) {
   download.file('https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv', 'pml-training.csv', method = 'curl')
 }
+dataset <- read.csv('pml-training.csv', row.name = 1)
+```
 
+# Summary
+
+In this project we use data collected  try to predict whether an exercise has been performed correctly or not using accelerometers' data measured using wearable 
+devices. A group of participants has been asked to perform different exercises in
+
+http://groupware.les.inf.puc-rio.br/har
+
+Source code of this analysis at https://github.com/lucacerone/jh-practical-machine-learning/ in the file `project.Rmd`.
+
+# Preparing the data
+
+First of all I had a look at the names and types of variables in the datasets
+(I wasn't able to find a dictionary for this dataset).
+
+The preliminary step was to clean the dataset from variables who could potentially that I didn't think relevant for the classification task, which lead me to exclude the variables `user_name`, `raw_timestamp_part_1`, `raw_timestamp_part_2`,
+`cvtd_timestamp`, `new_window` and `num_window`.
+
+```{r}
+remove_irrelevant_columns <- function(dataset) {
+  dataset %>% select(-one_of('user_name'), -contains('timestamp'), -contains('window'))
+}
+
+dataset <- remove_irrelevant_columns(dataset)
+```
+
+To further simplify the analysis I also decided to exclude all those variables
+that are factors (just for the sake of time I preferred avoiding having
+to create Dummy Variables, see if levels should be merged etc.).
+
+```{r}
+find_factor_columns <- function(dataset, keep_columns = c('classe')) {
+ factor_columns <- names(which(sapply(dataset, is.factor)))
+ factor_columns <- factor_columns[!factor_columns %in% keep_columns]
+ return(factor_columns)
+}
+
+factor_columns <- find_factor_columns(dataset)
+
+remove_columns <- function(dataset, columns_names) {
+  dataset %>% select(-one_of(columns_names))
+}
+
+dataset <- remove_columns(dataset, factor_columns)
+```
+
+Next I had to decide how to treat missing variables (NA values).
+Several strategies could be used here, for example using kNN method to impute missing values,
+substituing it with some value (common choices are 0, the mean value or the median value),
+or creating a dummy variable say whether the value was missing or not.
+
+All of these steps would have to be done by using a cross-validation procedure, 
+however in the training dataset 67 columns contained NA values; finding the right type
+of transformation for each of them would have been a laborious task, so for this report
+I decided to just ignore such columns.
+
+```{r}
+contains_na <- function(x) {force(x); any(is.na(x))}
+find_columns_with_na <- function(dataset) {
+  names(which(sapply(dataset, contains_na)))
+}
+columns_with_na <- find_columns_with_na(dataset)
+dataset <- remove_columns(dataset, columns_with_na)
+```
+
+After this I was left with a training dataset having 52 numeric columns (excluding the column `classe`).
+
+I checked that none of the column had *near zero variance* and that no column is a linear combination of the others --note that this however doesn't guarantee that when I select a subset in the cross-validation step later on, I don't end up with a subset who suffers
+of any of these two issues--.
+
+```{r, code_folding = show}
+nearZeroVar(dataset)
+
+id_classe = which(colnames(dataset) == 'classe')
+findLinearCombos(dataset[ ,-id_classe])
+```
+
+# Building the model and estimating out of sample error
+
+As a first attempt I decided to try the following procedure:
+
+- center, scale and transform the data using BoxCox transformation
+- build a random forest model (note: I used the randomForest package rather than caret's 'rf' method
+to avoid the optimal parameters tuning search which was too computationally expensive on my laptop)
+
+To evaluate the performace of this procedure I decided to use 10-fold cross-validation.
+
+```{r}
+set.seed(20170501)
+nFolds <- 10
+kFolds <- createFolds(dataset$classe, k = nFolds, list = F)
+
+
+errors <- vector(mode = "numeric", length = nFolds)
+  
+for (k in 1:nFolds) {
+  idTesting <- kFolds == k
+  training <- dataset[!idTesting,]
+  testing <- dataset[idTesting,]
+  
+  preobj <- preProcess(training[, -id_classe], method = c('center', 'scale', 'BoxCox'))
+  training <- predict(preobj, training)
+  modrf <- randomForest(classe ~ ., data = training)
+  testing <- predict(preobj, newdata = testing)
+  predrf <- predict(modrf, newdata = testing)
+  
+  accuracy <- mean(predrf == testing$classe)
+  errors[k] <- 1-accuracy
+}
+
+meanError <- mean(errors)
+sdError <- sd(errors)/sqrt(nFolds)
+
+ci_error <-  meanError + c(-1.96, 1.96)*sdError
+```
+The average errors on the testing set has been `r round(100*meanError,2)`% with a 95% confidence interval of `r round(100*ci_error,2)`. 
+
+I considered the expected out-of-sample error of this classifier to be acceptable for the purpose of this report.
+
+# Final model
+
+After finding out that using the random forest function provides with quite accurate results, I trained a final model using the whole
+dataset and used it to predict the samples in the 'testing' dataset provided.
+
+```{r}
+# ensure that training and testing datasets exist ----
 if (!file.exists('pml-testing.csv')) {
   download.file('https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv', 'pml-testing.csv', method = 'curl')
 }
-```
+testing <- read.csv('pml-testing.csv', row.name = 1)
+id <- testing$problem_id
 
-Source code at https://github.com/lucacerone/jh-practical-machine-learning/
+keepvar <- colnames(testing) %in% colnames(dataset)
+testing <- testing[, keepvar]
 
-```{r}
+preobj <- preProcess(dataset[, -id_classe], method = c('center', 'scale', 'BoxCox'))
+training <- predict(preobj, dataset)
 
+finalModel <- randomForest(classe ~ ., data = training)
+
+testing <- predict(preobj, newdata = testing)
+predictions <- predict(finalModel, newdata = testing)
+answers <- data.frame(problem_id = id, prediction = predictions)
+write.csv(answers, file = 'answers.csv', row.names = F)
+print(answers)
 ```
