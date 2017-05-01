@@ -28,16 +28,17 @@ if (!file.exists('pml-training.csv')) {
 dataset <- read.csv('pml-training.csv', row.name = 1)
 ```
 
-# Summary
+# The problem:
 
-In this project we use data collected  try to predict what exercise has been performed using accelerometers' data measured using wearable 
-devices. A group of participants has been asked to perform different exercises while their movements were being recorded by mean of wearable tracking devices.
+In this project we trained a model to predict what exercise has been performed using accelerometers' data from wearable devices.
+devices.
 
 The dataset is desctibed at
 
 http://groupware.les.inf.puc-rio.br/har
 
 Source code of this analysis at https://github.com/lucacerone/jh-practical-machine-learning/ in the file `project.Rmd`.
+
 
 # Preparing the data
 
@@ -144,9 +145,12 @@ sdError <- sd(errors)/sqrt(nFolds)
 
 ci_error <-  meanError + c(-1.96, 1.96)*sdError
 ```
+
 The average errors on the testing set has been `r round(100*meanError,2)`% with a 95% confidence interval of `r round(100*ci_error,2)`. 
 
-I considered the expected out-of-sample error of this classifier to be acceptable for the purpose of this report.
+I considered the expected out-of-sample error of this classifier to be acceptable for the purpose of this report and didn't
+investigate more time in checking whether removing outliers, imputing missing values, further tuning the parameters in the model 
+or building an ensamble of models would improve accuracy even more.
 
 # Final model
 
@@ -175,3 +179,5 @@ answers <- data.frame(problem_id = id, prediction = predictions)
 write.csv(answers, file = 'answers.csv', row.names = F)
 print(answers)
 ```
+
+All the answers turned out to be correct when I submitted the prediction.

@@ -235,9 +235,9 @@ if (!file.exists('pml-training.csv')) {
   download.file('https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv', 'pml-training.csv', method = 'curl')
 }
 dataset &lt;- read.csv('pml-training.csv', row.name = 1)</code></pre>
-<div id="summary" class="section level1">
-<h1>Summary</h1>
-<p>In this project we use data collected try to predict what exercise has been performed using accelerometers’ data measured using wearable devices. A group of participants has been asked to perform different exercises while their movements were being recorded by mean of wearable tracking devices.</p>
+<div id="the-problem" class="section level1">
+<h1>The problem:</h1>
+<p>In this project we trained a model to predict what exercise has been performed using accelerometers’ data from wearable devices. devices.</p>
 <p>The dataset is desctibed at</p>
 <p><a href="http://groupware.les.inf.puc-rio.br/har" class="uri">http://groupware.les.inf.puc-rio.br/har</a></p>
 <p>Source code of this analysis at <a href="https://github.com/lucacerone/jh-practical-machine-learning/" class="uri">https://github.com/lucacerone/jh-practical-machine-learning/</a> in the file <code>project.Rmd</code>.</p>
@@ -324,7 +324,7 @@ sdError &lt;- sd(errors)/sqrt(nFolds)
 
 ci_error &lt;- meanError + c(-1.96, 1.96) * sdError</code></pre>
 <p>The average errors on the testing set has been 0.3% with a 95% confidence interval of 0.25, 0.35.</p>
-<p>I considered the expected out-of-sample error of this classifier to be acceptable for the purpose of this report.</p>
+<p>I considered the expected out-of-sample error of this classifier to be acceptable for the purpose of this report and didn’t investigate more time in checking whether removing outliers, imputing missing values, further tuning the parameters in the model or building an ensamble of models would improve accuracy even more.</p>
 </div>
 <div id="final-model" class="section level1">
 <h1>Final model</h1>
@@ -371,6 +371,7 @@ print(answers)</code></pre>
 ## 18         18          B
 ## 19         19          B
 ## 20         20          B</code></pre>
+<p>All the answers turned out to be correct when I submitted the prediction.</p>
 </div>
 
 
